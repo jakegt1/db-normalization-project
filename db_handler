@@ -27,7 +27,8 @@ class Database:
         ]
         line_num = 0
         creation_tokens = content[line_num].split()
-        new_table = Table(creation_tokens[2])
+        table_name = creation_tokens[2].replace("(","")
+        new_table = Table(table_name)
         line_num = line_num + 1
         while(line_num < len(content)):
             current_line = content[line_num]
@@ -140,7 +141,6 @@ class Database:
         if (tokens[0].lower() == "foreign"):
             return Handle.foreign_key
 
-
     # Parses 1 line of code. Expects one string.
     def handle_line(self, line):
         current_token = 0
@@ -160,7 +160,7 @@ class Database:
         tables = self.tables
         returnString = "";
         for table in tables:
-            returnString += "CREATE TABLE "+table.table_name+"\n"
+            returnString += "CREATE TABLE "+table.table_name+"(\n"
             for column in table.columns:
                 returnString += "  "+column['name']+" "+column['type']
                 for flag in column['flags']:
