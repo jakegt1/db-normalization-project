@@ -33,7 +33,11 @@ class Database:
             current_line = content[line_num]
             column_info = self.parse_table_line(current_line)
             if(column_info['type'] not in keywords and column_info['name']):
-                new_table.add_column(column_info['name'], column_info['type'])
+                new_table.add_column(
+                    column_info['name'],
+                    column_info['type'],
+                    column_info['flags']
+                )
             elif (column_info['type'] == "PK"):
                 new_table.add_primary_key(column_info['name'])
             elif (column_info['type'] == "FK"):
@@ -71,11 +75,23 @@ class Database:
                 reference = line[3]
         return {"table": table, "reference": reference}
 
+    def parse_flags(self, line):
+        flags = []
+        while(line):
+            popped = line.pop(0)
+            if(popped.lower() == "not"):
+                next_token = line.pop(0).replace(",","")
+                flags.append(popped + " " + next_token)
+            else:
+                popped = popped.replace(",","")
+                flags.append(popped)
+        return flags
+
     def parse_table_line(self, line):
         tokens = line.split()
         name = None
         type = None
-        flags = None
+        flags = []
         reference = None
         table = None
         table_end = True if (");" in tokens) else False
@@ -102,8 +118,11 @@ class Database:
                 name = tokens[0]
                 if("(" in tokens[1]):
                     type = tokens[1] + tokens[2] + tokens[3]
+                    tokens = tokens[4:]
                 else:
                     type = tokens[1]
+                    tokens = tokens[2:]
+                flags = self.parse_flags(tokens)
         return {
             "name": name,
             "type": type,
@@ -138,7 +157,22 @@ class Database:
         self.parse(content_lines)
 
     def export_database(self):
-        pass
+        tables = self.tables
+        returnString = "";
+        for table in tables:
+            returnString += "CREATE TABLE "+table.table_name+"\n"
+            for column in table.columns:
+                returnString += "  "+column['name']+" "+column['type']
+                for flag in column['flags']:
+                    returnString+= " "+flag
+                returnString += ",\n"
+            for foreign_key in table.foreign_keys:
+                returnString += "  FOREIGN KEY "+foreign_key['name']+" "
+                returnString += "REFERENCES "+foreign_key['table']+"( "
+                returnString += foreign_key['column']+" ),\n"
+            returnString += "  PRIMARY KEY ( "+table.primary_key+" )\n"
+            returnString += ");\n\n"
+        return returnString
 
     def tables(self):
         return self.tables
@@ -158,21 +192,33 @@ class Table:
         self.primary_key = ""
         self.foreign_keys = []
 
-    def add_column(self, name, type):
-        self.columns.append((name, type))
+    def add_column(self, name, type, flags):
+        if not (flags):
+            self.columns.append({"name": name, "type": type})
+        else:
+            self.columns.append({"name": name, "type": type, "flags": flags})
 
     def add_primary_key(self, name):
         self.primary_key = name
 
     def add_foreign_key(self, name, references_table, references_column):
-        self.foreign_keys.append((name, references_table, references_column))
+        self.foreign_keys.append({
+            "name": name,
+            "table": references_table,
+            "column": references_column
+        })
 
+    def columns(self):
+        return self.columns
 
+    def foreign_keys(self):
+        return self.foreign_keys
+
+    def table_name(self):
+        return self.table_name
 
 if __name__ == "__main__":
     database = Database()
     database.import_file("test.sql")
-    print(database.tables[1].columns)
-    print(database.tables[1].primary_key)
-    print(database.tables[1].foreign_keys)
+    print(database.export_database())
 
