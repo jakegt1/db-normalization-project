@@ -40,7 +40,8 @@ class Database:
                     column_info['flags']
                 )
             elif (column_info['type'] == "PK"):
-                new_table.add_primary_key(column_info['name'])
+                for name in column_info['name']:
+                    new_table.add_primary_key(name)
             elif (column_info['type'] == "FK"):
                 new_table.add_foreign_key(
                     column_info['name'],
@@ -88,6 +89,43 @@ class Database:
                 flags.append(popped)
         return flags
 
+    def parse_primary_key_line(self, tokens):
+        names = []
+        if(tokens[2] == "("):
+            if("," not in tokens[3]):
+                names.append(tokens[3])
+                tokens = tokens[4:]
+                while(tokens):
+                    name = tokens.pop()
+                    if("," not in name and ")" not in name):
+                        names.append(name)
+            else:
+                tokens = tokens[3:]
+                while(tokens):
+                    name = tokens.pop()
+                    if("(" in name):
+                        name = name[1:]
+                    if(")" in name):
+                        name = name[:-1]
+                    for split in name.split(","):
+                        if(split != ""):
+                            names.append(split)
+        elif("," in tokens[2]):
+            tokens = tokens[2:]
+            while(tokens):
+                name = tokens.pop()
+                if("(" in name):
+                    name = name[1:]
+                if(")" in name):
+                    name = name[:-1]
+                for split in name.split(","):
+                    if(split != ""):
+                        names.append(split)
+        else:
+            names.append(tokens[2][1:-1])
+        return names
+            
+
     def parse_table_line(self, line):
         tokens = line.split()
         name = None
@@ -99,11 +137,7 @@ class Database:
         handle = self.handle_line(line)
         if(len(tokens) > 1):
             if (handle == Handle.primary_key):
-                if(tokens[2] == "("):
-                    name = tokens[3]
-                else:
-                    #strips parentheses (string from pos 1 to pos length-1)
-                    name = tokens[2][1:-1]
+                name = self.parse_primary_key_line(tokens)
                 type = "PK"
             elif(handle == Handle.foreign_key):
                 if(tokens[2] == "("):
@@ -141,7 +175,7 @@ class Database:
         if (tokens[0].lower() == "foreign"):
             return Handle.foreign_key
 
-    # Parses 1 line of code. Expects one string.
+    # Shows the handle for a line of code. Expects a string.
     def handle_line(self, line):
         current_token = 0
         tokens = line.split()
@@ -149,12 +183,24 @@ class Database:
             return self.keyword_handler(tokens)
         return Handle.none
 
+    def add_functional_dependency(self, table_name, child, parents):
+        for table in self.tables:
+            if (table.table_name == table_name):
+                table.add_functional_dependency(child, parents)
+                break
+
     def import_file(self, import_file):
         file = open(import_file)
         content = file.read()
         content_lines = content.split("\n")
         content_lines = [line for line in content_lines if line.strip()]
         self.parse(content_lines)
+
+    def handle_functional_dependencies(self):
+        for table in self.tables:
+            for child, parents in table.functional_dependencies.items():
+                if(parents != table.primary_keys):
+                    print(parents)
 
     def export_database(self):
         tables = self.tables
@@ -170,7 +216,10 @@ class Database:
                 returnString += "  FOREIGN KEY "+foreign_key['name']+" "
                 returnString += "REFERENCES "+foreign_key['table']+"( "
                 returnString += foreign_key['column']+" ),\n"
-            returnString += "  PRIMARY KEY ( "+table.primary_key+" )\n"
+            returnString += "  PRIMARY KEY ( "+table.primary_keys[0]
+            for primary_key in (table.primary_keys[1:]):
+                returnString += ", "+primary_key
+            returnString += " )\n"
             returnString += ");\n\n"
         return returnString
 
@@ -189,8 +238,9 @@ class Table:
     def __init__(self, table_name):
         self.table_name = table_name
         self.columns = []
-        self.primary_key = ""
+        self.primary_keys = []
         self.foreign_keys = []
+        self.functional_dependencies = {}
 
     def add_column(self, name, type, flags):
         if not (flags):
@@ -198,8 +248,17 @@ class Table:
         else:
             self.columns.append({"name": name, "type": type, "flags": flags})
 
+    def remove_column(self, name):
+        self.columns[:] = (
+            [column for column in self.columns if not (column["name"] == name)]
+        )
+                
+
+    def add_functional_dependency(self, child, parents):
+        self.functional_dependencies[child] = parents
+
     def add_primary_key(self, name):
-        self.primary_key = name
+        self.primary_keys.append(name)
 
     def add_foreign_key(self, name, references_table, references_column):
         self.foreign_keys.append({
@@ -207,6 +266,9 @@ class Table:
             "table": references_table,
             "column": references_column
         })
+
+    def functional_dependencies(self):
+        return self.functional_dependencies
 
     def columns(self):
         return self.columns
@@ -220,5 +282,9 @@ class Table:
 if __name__ == "__main__":
     database = Database()
     database.import_file("test.sql")
+    database.add_functional_dependency("memes", "t_name", ["dank"])
+    for x in database.tables:
+        print(x.primary_keys)
+    database.handle_functional_dependencies()
     print(database.export_database())
 
