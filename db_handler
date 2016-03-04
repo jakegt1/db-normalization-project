@@ -124,7 +124,6 @@ class Database:
         else:
             names.append(tokens[2][1:-1])
         return names
-            
 
     def parse_table_line(self, line):
         tokens = line.split()
@@ -197,10 +196,50 @@ class Database:
         self.parse(content_lines)
 
     def handle_functional_dependencies(self):
+        fixables = {}
         for table in self.tables:
+            table_name = table.table_name
+            fixables[table_name] = {}
             for child, parents in table.functional_dependencies.items():
                 if(parents != table.primary_keys):
-                    print(parents)
+                    if(not parents[0] in fixables[table_name]):
+                        fixables[table_name][parents[0]] = []
+                    fixables[table_name][parents[0]].append(child)
+        print(fixables)
+        for table, deps_to_fix in fixables.items():
+            for parent, children in deps_to_fix.items():
+                new_table = Table(table+"_"+parent)
+                old_table = self.get_table(table)
+                parent_column_info = old_table.get_column(parent)
+                new_table.add_primary_key(parent)
+                new_table.add_column(
+                    parent_column_info["name"],
+                    parent_column_info["type"],
+                    parent_column_info["flags"]
+                )
+                for child in children:
+                    child_info = old_table.get_column(child)
+                    new_table.add_column(
+                        child_info["name"],
+                        child_info["type"],
+                        child_info["flags"]
+                    )
+                    self.get_table(table).remove_column(child_info["name"])
+                new_table.add_foreign_key(
+                    parent,
+                    old_table.table_name,
+                    parent
+                )
+                self.tables.append(new_table)
+
+
+    def get_table(self, table_name):
+        tableFound = None
+        for table in self.tables:
+            if(table.table_name == table_name):
+                tableFound = table
+                break
+        return tableFound
 
     def export_database(self):
         tables = self.tables
@@ -244,15 +283,23 @@ class Table:
 
     def add_column(self, name, type, flags):
         if not (flags):
-            self.columns.append({"name": name, "type": type})
+            self.columns.append({"name": name, "type": type, "flags": None})
         else:
             self.columns.append({"name": name, "type": type, "flags": flags})
+
+    def get_column(self, name):
+        columnFound = None
+        for column in self.columns:
+            print(column["name"]+" "+name)
+            if(column["name"] == name):
+                columnFound = column
+                break
+        return columnFound
 
     def remove_column(self, name):
         self.columns[:] = (
             [column for column in self.columns if not (column["name"] == name)]
         )
-                
 
     def add_functional_dependency(self, child, parents):
         self.functional_dependencies[child] = parents
@@ -281,8 +328,8 @@ class Table:
 
 if __name__ == "__main__":
     database = Database()
-    database.import_file("test.sql")
-    database.add_functional_dependency("memes", "t_name", ["dank"])
+    database.import_file("test_func.sql")
+    database.add_functional_dependency("test", "country", ["zip"])
     for x in database.tables:
         print(x.primary_keys)
     database.handle_functional_dependencies()
