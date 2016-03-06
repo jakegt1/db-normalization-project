@@ -300,7 +300,13 @@ class Table:
         )
 
     def add_functional_dependency(self, child, parents):
-        self.functional_dependencies[child] = parents
+        child_check = self.get_column(child)
+        parent_check = True
+        for parent in parents:
+            parent_check = parent_check and self.get_column(parent)
+        if(child_check and parent_check):
+            self.functional_dependencies[child] = parents
+        return (child_check and parent_check)
 
     def add_primary_key(self, name):
         self.primary_keys.append(name)
