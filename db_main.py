@@ -54,6 +54,14 @@ class UIHandlers(QMainWindow):
             pk_data.append(this_pk_tuple)
         return pk_data
 
+    def generate_functional_dependency_data(self, fds):
+        fd_data = []
+        for child, parent in fds.items():
+            this_fd_tuple = (child,)
+            this_fd_tuple += ([(parent,[])],)
+            fd_data.append(this_fd_tuple)
+        return fd_data
+
     def generate_tree_data(self):
         tables = self.database.tables
         tree_data = []
@@ -72,10 +80,13 @@ class UIHandlers(QMainWindow):
             fk_data = self.generate_foreign_key_data(
                 table.foreign_keys
             )
+            fd_data = self.generate_functional_dependency_data(
+                table.functional_dependencies
+            )
             table_data[0] += (column_data,)
             table_data[1] += (pk_data,)
             table_data[2] += (fk_data,)
-            table_data[3] += ([],)
+            table_data[3] += (fd_data,)
             tuple += (table_data,)
             tree_data.append(tuple)
         print(tree_data)

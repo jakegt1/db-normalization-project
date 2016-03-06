@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'ui_design.ui'
 #
-# Created: Sun Mar  6 22:49:25 2016
+# Created: Sun Mar  6 23:32:09 2016
 #      by: PyQt5 UI code generator 5.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -33,7 +33,6 @@ class Ui_main_window(object):
         self.export_layout.addWidget(self.export_label)
         self.export_SQL_code = QtWidgets.QTextEdit(self.horizontalLayoutWidget)
         self.export_SQL_code.setFrameShadow(QtWidgets.QFrame.Sunken)
-        self.export_SQL_code.setReadOnly(True)
         self.export_SQL_code.setObjectName("export_SQL_code")
         self.export_layout.addWidget(self.export_SQL_code)
         self.verti_layout_A.addLayout(self.export_layout)
@@ -47,6 +46,7 @@ class Ui_main_window(object):
         self.database_info_label.setObjectName("database_info_label")
         self.vert_layout_B.addWidget(self.database_info_label)
         self.database_info_tree = QtWidgets.QTreeView(self.horizontalLayoutWidget)
+        self.database_info_tree.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.database_info_tree.setObjectName("database_info_tree")
         self.vert_layout_B.addWidget(self.database_info_tree)
         self.database_layout = QtWidgets.QVBoxLayout()
