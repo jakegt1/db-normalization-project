@@ -218,19 +218,22 @@ class Database:
                 )
                 for child in children:
                     child_info = old_table.get_column(child)
+                    print(child_info)
                     new_table.add_column(
                         child_info["name"],
                         child_info["type"],
                         child_info["flags"]
                     )
                     self.get_table(table).remove_column(child_info["name"])
+                    self.get_table(table).remove_functional_dependency(
+                        child_info["name"]
+                    )
                 new_table.add_foreign_key(
                     parent,
                     old_table.table_name,
                     parent
                 )
                 self.tables.append(new_table)
-
 
     def get_table(self, table_name):
         tableFound = None
@@ -308,6 +311,9 @@ class Table:
             self.functional_dependencies[child] = parents
         return (child_check and parent_check)
 
+    def remove_functional_dependency(self, child):
+        del self.functional_dependencies[child]
+
     def add_primary_key(self, name):
         self.primary_keys.append(name)
 
@@ -337,6 +343,7 @@ if __name__ == "__main__":
     database.add_functional_dependency("winners", "winnerdob", ["winner"])
     #for x in database.tables:
     #    print(x.primary_keys)
+    database.handle_functional_dependencies()
     database.handle_functional_dependencies()
     print(database.export_database())
 
