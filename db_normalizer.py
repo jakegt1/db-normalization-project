@@ -81,7 +81,7 @@ class Database:
         flags = []
         while(line):
             popped = line.pop(0)
-            if(popped.lower() == "not"):
+            if(popped.lower() == "not" or popped.lower() == "unique"):
                 next_token = line.pop(0).replace(",","")
                 flags.append(popped + " " + next_token)
             else:
@@ -301,6 +301,9 @@ class Table:
         self.columns[:] = (
             [column for column in self.columns if not (column["name"] == name)]
         )
+        self.remove_primary_key(name)
+        self.remove_foreign_key(name)
+        self.remove_functional_dependency(name)
 
     def add_functional_dependency(self, child, parents):
         child_check = self.get_column(child)
@@ -311,8 +314,26 @@ class Table:
             self.functional_dependencies[child] = parents
         return (child_check and parent_check)
 
+    def remove_primary_key(self, name):
+        self.primary_keys[:] = (
+            [
+                primary_key
+                for primary_key in self.primary_keys
+                if not (primary_key == name)
+            ]
+        )
+
+    def remove_foreign_key(self, name):
+        self.foreign_keys[:] = (
+            [
+                foreign_key
+                for foreign_key in self.foreign_keys
+                if not (foreign_key["name"] == name)
+            ]
+        )
+
     def remove_functional_dependency(self, child):
-        del self.functional_dependencies[child]
+        self.functional_dependencies.pop(child, None)
 
     def add_primary_key(self, name):
         self.primary_keys.append(name)
@@ -323,6 +344,9 @@ class Table:
             "table": references_table,
             "column": references_column
         })
+
+    def primary_keys(self):
+        return self.primary_keys
 
     def functional_dependencies(self):
         return self.functional_dependencies

@@ -4,7 +4,8 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QFileDialog,
     QMenu,
-    QInputDialog
+    QInputDialog,
+    QMessageBox
 )
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtCore import Qt
@@ -141,9 +142,84 @@ class UIHandlers(QMainWindow):
         self.update_sql_code(self.database.export_database())
         self.update_tree_view()
 
+    def add_column(self, table):
+        def add_column_closure():
+            this_table = self.database.get_table(table)
+            name, ok_column = QInputDialog.getText(
+                self,
+                'Add Column',
+                'Column Name',
+            )
+            if(ok_column):
+                datatype, ok_data = QInputDialog.getText(
+                    self,
+                    'Add Column',
+                    'Column Data Type',
+                )
+            if(ok_data):
+                ok_flag = True
+                flags = []
+                flag_names = [
+                    "NOT NULL",
+                    "UNIQUE INDEX",
+                    "BINARY",
+                    "UNSIGNED",
+                    "ZEROFILL",
+                    "AUTO_INCREMENT",
+                ]
+                while(ok_flag):
+                    flag, ok_flag = QInputDialog.getItem(
+                        self,
+                        'Add Column',
+                        'Flag',
+                        flag_names,
+                        0,
+                        False
+                    )
+                    if(flag and ok_flag):
+                        flag_names = list(set(flag_names) - set([flag]))
+                        flags.append(flag)
+                if(flags):
+                    this_table.add_column(
+                        name,
+                        datatype,
+                        flags
+                    )
+                self.update_tree_view()
+                self.update_sql_code(self.database.export_database())
+        return add_column_closure
+
+    def add_primary_key(self, table):
+        def add_primary_key_closure():
+            this_table = self.database.get_table(table)
+            columns = this_table.columns
+            primary_keys = this_table.primary_keys
+            column_names = list(
+                map(
+                    lambda column: column["name"],
+                    columns
+                )
+            )
+            column_names = list(set(column_names) - set(primary_keys))
+            primary_key, ok_primary_key = QInputDialog.getItem(
+                self,
+                'Add Primary Key',
+                'Primary Key',
+                column_names,
+                0,
+                False
+            )
+            if(ok_primary_key):
+                this_table.add_primary_key(primary_key)
+                self.update_tree_view()
+                self.update_sql_code(self.database.export_database())
+        return add_primary_key_closure
+
+
     def add_functional_dependency(self, table):
         def add_functional_dependency_closure():
-            columns = self.database.get_table(table).columns
+            this_table = self.database.get_table(table)
+            columns = this_table.columns
             column_names = list(
                 map(
                     lambda column: column["name"],
@@ -179,12 +255,87 @@ class UIHandlers(QMainWindow):
                         column_names = list(set(column_names) - set([parent]))
                         parents.append(parent)
                 if(parents):
-                    self.database.get_table(table).add_functional_dependency(
+                    this_table.add_functional_dependency(
                         child,
                         parents
                     )
                     self.update_tree_view()
         return add_functional_dependency_closure
+
+    def delete_column(self, table, column):
+        def delete_column_closure():
+            this_table = self.database.get_table(table)
+            message = 'Are you sure you want to delete '
+            message += column + ' from ' + table + '?'
+            ok_delete = QMessageBox.question(
+                self,
+                'Delete Column',
+                message,
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if(ok_delete):
+                this_table.remove_column(column)
+                self.update_tree_view()
+                self.update_sql_code(self.database.export_database())
+        return delete_column_closure
+
+    def delete_primary_key(self, table, primary_key):
+        def delete_primary_key_closure():
+            this_table = self.database.get_table(table)
+            message = 'Are you sure you want to delete the primary key for '
+            message += primary_key + ' from ' + table +'?'
+            ok_delete = QMessageBox.question(
+                self,
+                'Delete Primary Key',
+                message,
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if(ok_delete):
+                this_table.remove_primary_key(primary_key)
+                self.update_tree_view()
+                self.update_sql_code(self.database.export_database())
+        return delete_primary_key_closure
+
+
+    def delete_foreign_key(self, table, foreign_key):
+        def delete_foreign_key_closure():
+            this_table = self.database.get_table(table)
+            message = 'Are you sure you want to delete the foreign key for '
+            message += foreign_key + ' from ' + table +'?'
+            ok_delete = QMessageBox.question(
+                self,
+                'Delete Foreign Key',
+                message,
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if(ok_delete):
+                this_table.remove_foreign_key(foreign_key)
+                self.update_tree_view()
+                self.update_sql_code(self.database.export_database())
+        return delete_foreign_key_closure
+
+    def delete_functional_dependency(self, table, functional_dependency):
+        def delete_functional_dependency_closure():
+            this_table = self.database.get_table(table)
+            message = 'Are you sure you want to '
+            message += 'delete the functional dependency for '
+            message += functional_dependency + ' from ' + table +'?'
+            ok_delete = QMessageBox.question(
+                self,
+                'Delete Functional Dependency',
+                message,
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if(ok_delete):
+                this_table.remove_functional_dependency(functional_dependency)
+                self.update_tree_view()
+                self.update_sql_code(self.database.export_database())
+        return delete_functional_dependency_closure
+
 
     def get_node_level(self, index):
         level = 0
@@ -195,9 +346,17 @@ class UIHandlers(QMainWindow):
 
     def database_info_tree_menu_l1(self, menu, index):
         if(index.data() == "Columns"):
-            menu.addAction(self.tr("Add Column"), )
+            menu.addAction(
+                self.tr("Add Column"),
+                self.add_column(index.parent().data()),
+                0
+            )
         elif(index.data() == "Primary Keys"):
-            menu.addAction(self.tr("Add Primary Key"))
+            menu.addAction(
+                self.tr("Add Primary Key"),
+                self.add_primary_key(index.parent().data()),
+                0
+            )
         elif(index.data() == "Foreign Keys"):
             menu.addAction(self.tr("Add Foreign Key"))
         else:
@@ -210,14 +369,31 @@ class UIHandlers(QMainWindow):
 
     def database_info_tree_menu_l2(self, menu, index):
         index_parent = index.parent()
+        table = index_parent.parent().data()
         if(index_parent.data() == "Columns"):
-            menu.addAction(self.tr("Delete Column"))
+            menu.addAction(
+                self.tr("Delete Column"),
+                self.delete_column(table, index.data()),
+                0
+            )
         elif(index_parent.data() == "Primary Keys"):
-            menu.addAction(self.tr("Delete Primary Key"))
+            menu.addAction(
+                self.tr("Delete Primary Key"),
+                self.delete_primary_key(table, index.data()),
+                0
+            )
         elif(index_parent.data() == "Foreign Keys"):
-            menu.addAction(self.tr("Delete Foreign Key"))
+            menu.addAction(
+                self.tr("Delete Foreign Key"),
+                self.delete_foreign_key(table, index.data()),
+                0
+            )
         else:
-            menu.addAction(self.tr("Delete Functional Dependency"))
+            menu.addAction(
+                self.tr("Delete Functional Dependency"),
+                self.delete_functional_dependency(table, index.data()),
+                0
+            )
         return menu
 
     def database_info_tree_menu_l3(self, menu, index):
