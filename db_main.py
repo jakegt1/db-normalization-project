@@ -22,6 +22,10 @@ class UIHandlers(QMainWindow):
         self.ui.setupUi(self)
         import_button = self.ui.action_import
         import_button.triggered.connect(self.get_file_for_import)
+        save_button = self.ui.action_save
+        save_button.triggered.connect(self.save_file)
+        saveas_button = self.ui.action_save_as
+        saveas_button.triggered.connect(self.save_file_as)
         normalize_button = self.ui.normalize_button
         normalize_button.clicked.connect(self.normalize_database)
         self.ui.database_info_tree.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -69,8 +73,6 @@ class UIHandlers(QMainWindow):
     def generate_functional_dependency_data(self, fds):
         fd_data = []
         for child, parent in fds.items():
-            print(child)
-            print(parent)
             this_fd_tuple = (child,)
             this_fd_tuple += ([(parent[0],[])],)
             fd_data.append(this_fd_tuple)
@@ -109,7 +111,6 @@ class UIHandlers(QMainWindow):
             table_data[3] += (fd_data,)
             tuple += (table_data,)
             tree_data.append(tuple)
-        print(tree_data)
         return tree_data
 
     def add_items(self, parent, elements):
@@ -126,14 +127,36 @@ class UIHandlers(QMainWindow):
     def update_sql_code(self, text):
         self.ui.export_SQL_code.setText(text)
 
+    def save_file(self):
+        save_file = open(self.filename, 'w')
+        save_file.truncate()
+        save_file.write(self.database.export_database())
+
+    def save_file_as(self):
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            'Save file',
+            '~/',
+            self.tr("SQL Files (*.sql)")
+        )
+        new_file = open(filename, 'w')
+        new_file.write(self.database.export_database())
+        new_file.close()
+
     def get_file_for_import(self):
-        filename, _ = QFileDialog.getOpenFileName(self, 'Choose file', '~/')
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            'Choose file',
+            '~/',
+            self.tr("SQL Files (*.sql)")
+        )
         self.database = Database()
         self.database.import_file(filename)
         self.update_sql_code(self.database.export_database())
-        self.add_items(self.model, self.generate_tree_data())
         self.ui.database_info_tree.setModel(self.model)
+        self.filename = filename
         self.filename_without_path = filename.split("/")[-1]
+        self.update_tree_view()
         self.set_model_header_name()
         return filename
 
@@ -235,10 +258,7 @@ class UIHandlers(QMainWindow):
                 False
             )
             if(child):
-                print(column_names)
-                print(set([child]))
                 column_names = list(set(column_names) - set([child]))
-                print(column_names)
             if(ok_child):
                 ok_parent = True
                 parents = []

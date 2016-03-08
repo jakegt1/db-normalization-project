@@ -150,7 +150,10 @@ class Database:
                 pass
             else:
                 name = tokens[0]
-                if("(" in tokens[1]):
+                if(")" in tokens[1]):
+                    type = tokens[1]
+                    tokens = tokens[2:]
+                elif("(" in tokens[1]):
                     type = tokens[1] + tokens[2] + tokens[3]
                     tokens = tokens[4:]
                 else:
@@ -228,12 +231,12 @@ class Database:
                     self.get_table(table).remove_functional_dependency(
                         child_info["name"]
                     )
-                new_table.add_foreign_key(
+                old_table.add_foreign_key(
                     parent,
-                    old_table.table_name,
+                    new_table.table_name,
                     parent
                 )
-                self.tables.append(new_table)
+                self.tables.insert(0, new_table)
 
     def get_table(self, table_name):
         tableFound = None
@@ -250,8 +253,9 @@ class Database:
             returnString += "CREATE TABLE "+table.table_name+"(\n"
             for column in table.columns:
                 returnString += "  "+column['name']+" "+column['type']
-                for flag in column['flags']:
-                    returnString+= " "+flag
+                if(column['flags']):
+                    for flag in column['flags']:
+                        returnString+= " "+flag
                 returnString += ",\n"
             for foreign_key in table.foreign_keys:
                 returnString += "  FOREIGN KEY ( "+foreign_key['name']+" ) "
@@ -362,9 +366,8 @@ class Table:
 
 if __name__ == "__main__":
     database = Database()
-    database.import_file("test_func.sql")
+    database.import_file("schema.sql")
     print(database.export_database())
-    database.add_functional_dependency("winners", "winnerdob", ["winner"])
     #for x in database.tables:
     #    print(x.primary_keys)
     database.handle_functional_dependencies()

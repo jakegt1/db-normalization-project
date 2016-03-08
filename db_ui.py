@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'ui_design.ui'
 #
-# Created: Sun Mar  6 23:32:09 2016
+# Created: Tue Mar  8 15:41:50 2016
 #      by: PyQt5 UI code generator 5.2.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_main_window(object):
     def setupUi(self, main_window):
         main_window.setObjectName("main_window")
-        main_window.resize(793, 600)
+        main_window.resize(790, 600)
         self.central_widget = QtWidgets.QWidget(main_window)
         self.central_widget.setObjectName("central_widget")
         self.horizontalLayoutWidget = QtWidgets.QWidget(self.central_widget)
@@ -60,7 +60,7 @@ class Ui_main_window(object):
         self.horizontal_layout_main.addLayout(self.vert_layout_B)
         main_window.setCentralWidget(self.central_widget)
         self.menu_bar = QtWidgets.QMenuBar(main_window)
-        self.menu_bar.setGeometry(QtCore.QRect(0, 0, 793, 25))
+        self.menu_bar.setGeometry(QtCore.QRect(0, 0, 790, 25))
         self.menu_bar.setObjectName("menu_bar")
         self.menu_file = QtWidgets.QMenu(self.menu_bar)
         self.menu_file.setObjectName("menu_file")
@@ -70,14 +70,19 @@ class Ui_main_window(object):
         main_window.setStatusBar(self.status_bar)
         self.action_import = QtWidgets.QAction(main_window)
         self.action_import.setObjectName("action_import")
-        self.action_export = QtWidgets.QAction(main_window)
-        self.action_export.setObjectName("action_export")
+        self.action_save = QtWidgets.QAction(main_window)
+        self.action_save.setObjectName("action_save")
         self.action_quit = QtWidgets.QAction(main_window)
         self.action_quit.setObjectName("action_quit")
+        self.action_save_as = QtWidgets.QAction(main_window)
+        self.action_save_as.setObjectName("action_save_as")
+        self.action_main_quit = QtWidgets.QAction(main_window)
+        self.action_main_quit.setObjectName("action_main_quit")
         self.menu_file.addAction(self.action_import)
-        self.menu_file.addAction(self.action_export)
+        self.menu_file.addAction(self.action_save)
+        self.menu_file.addAction(self.action_save_as)
         self.menu_file.addSeparator()
-        self.menu_file.addAction(self.action_quit)
+        self.menu_file.addAction(self.action_main_quit)
         self.menu_bar.addAction(self.menu_file.menuAction())
 
         self.retranslateUi(main_window)
@@ -94,8 +99,10 @@ class Ui_main_window(object):
         self.menu_file.setTitle(_translate("main_window", "File"))
         self.action_import.setText(_translate("main_window", "Import"))
         self.action_import.setShortcut(_translate("main_window", "Ctrl+I"))
-        self.action_export.setText(_translate("main_window", "Export"))
-        self.action_export.setShortcut(_translate("main_window", "Ctrl+E"))
+        self.action_save.setText(_translate("main_window", "Save"))
+        self.action_save.setShortcut(_translate("main_window", "Ctrl+S"))
         self.action_quit.setText(_translate("main_window", "Quit"))
         self.action_quit.setShortcut(_translate("main_window", "Ctrl+Q"))
+        self.action_save_as.setText(_translate("main_window", "Save As"))
+        self.action_main_quit.setText(_translate("main_window", "Quit"))
 

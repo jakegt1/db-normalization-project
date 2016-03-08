@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>793</width>
+    <width>790</width>
     <height>600</height>
    </rect>
   </property>
@@ -123,7 +123,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>793</width>
+     <width>790</width>
      <height>25</height>
     </rect>
    </property>
@@ -132,9 +132,10 @@
      <string>File</string>
     </property>
     <addaction name="action_import"/>
-    <addaction name="action_export"/>
+    <addaction name="action_save"/>
+    <addaction name="action_save_as"/>
     <addaction name="separator"/>
-    <addaction name="action_quit"/>
+    <addaction name="action_main_quit"/>
    </widget>
    <addaction name="menu_file"/>
   </widget>
@@ -147,12 +148,12 @@
     <string>Ctrl+I</string>
    </property>
   </action>
-  <action name="action_export">
+  <action name="action_save">
    <property name="text">
-    <string>Export</string>
+    <string>Save</string>
    </property>
    <property name="shortcut">
-    <string>Ctrl+E</string>
+    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="action_quit">
@@ -161,6 +162,16 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="action_save_as">
+   <property name="text">
+    <string>Save As</string>
+   </property>
+  </action>
+  <action name="action_main_quit">
+   <property name="text">
+    <string>Quit</string>
    </property>
   </action>
  </widget>
