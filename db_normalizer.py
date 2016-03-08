@@ -254,7 +254,7 @@ class Database:
                     returnString+= " "+flag
                 returnString += ",\n"
             for foreign_key in table.foreign_keys:
-                returnString += "  FOREIGN KEY "+foreign_key['name']+" "
+                returnString += "  FOREIGN KEY ( "+foreign_key['name']+" ) "
                 returnString += "REFERENCES "+foreign_key['table']+"( "
                 returnString += foreign_key['column']+" ),\n"
             returnString += "  PRIMARY KEY ( "+table.primary_keys[0]
