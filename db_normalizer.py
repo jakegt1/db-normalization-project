@@ -202,23 +202,33 @@ class Database:
         fixables = {}
         for table in self.tables:
             table_name = table.table_name
-            fixables[table_name] = {}
+            fixables[table_name] = DependencyTuples()
             for child, parents in table.functional_dependencies.items():
                 if(parents != table.primary_keys):
-                    if(not parents[0] in fixables[table_name]):
-                        fixables[table_name][parents[0]] = []
-                    fixables[table_name][parents[0]].append(child)
+                    if(not parents in fixables[table_name].parents()):
+                        fixables[table_name].add_tuple(parents, [child])
+                    else:
+                        fixables[table_name].get_tuple(parents)[1].append(child)
         for table, deps_to_fix in fixables.items():
-            for parent, children in deps_to_fix.items():
-                new_table = Table(table+"_"+parent)
+            for parents, children in deps_to_fix.tuples:
+                parent_string = ""
+                for parent in parents:
+                    parent_string += "_" + parent
+                new_table = Table(table+parent_string)
                 old_table = self.get_table(table)
-                parent_column_info = old_table.get_column(parent)
-                new_table.add_primary_key(parent)
-                new_table.add_column(
-                    parent_column_info["name"],
-                    parent_column_info["type"],
-                    parent_column_info["flags"]
-                )
+                for parent in parents:
+                    parent_column_info = old_table.get_column(parent)
+                    new_table.add_primary_key(parent)
+                    new_table.add_column(
+                        parent_column_info["name"],
+                        parent_column_info["type"],
+                        parent_column_info["flags"]
+                    )
+                    old_table.add_foreign_key(
+                        parent,
+                        new_table.table_name,
+                        parent
+                    )
                 for child in children:
                     child_info = old_table.get_column(child)
                     print(child_info)
@@ -231,11 +241,6 @@ class Database:
                     self.get_table(table).remove_functional_dependency(
                         child_info["name"]
                     )
-                old_table.add_foreign_key(
-                    parent,
-                    new_table.table_name,
-                    parent
-                )
                 self.tables.insert(0, new_table)
 
     def get_table(self, table_name):
@@ -278,6 +283,28 @@ class Handle(Enum):
     primary_key = 210
     foreign_key = 220
 
+class DependencyTuples:
+
+    def __init__(self):
+        self.tuples = []
+
+    def tuples(self):
+        return self.tuples
+
+    def parents(self):
+        return [x[0] for x in self.tuples]
+
+    def get_tuple(self, parent):
+        tupleFound = None
+        for a_tuple in self.tuples:
+            if(a_tuple[0] == parent):
+                tupleFound = a_tuple
+                break
+        return tupleFound
+
+    def add_tuple(self, parents, children):
+        self.tuples.append((parents, children))
+
 class Table:
 
     def __init__(self, table_name):
@@ -312,11 +339,17 @@ class Table:
     def add_functional_dependency(self, child, parents):
         child_check = self.get_column(child)
         parent_check = True
+        subset_check = child not in parents
         for parent in parents:
+            print(self.get_column(parent))
             parent_check = parent_check and self.get_column(parent)
-        if(child_check and parent_check):
-            self.functional_dependencies[child] = parents
-        return (child_check and parent_check)
+        if(child_check and parent_check and subset_check):
+            if (child not in self.functional_dependencies):
+                self.functional_dependencies[child] = parents
+            else:
+                for parent in parents:
+                    self.functional_dependencies[child].append(parent)
+        return (child_check and parent_check and subset_check)
 
     def remove_primary_key(self, name):
         self.primary_keys[:] = (
@@ -366,11 +399,13 @@ class Table:
 
 if __name__ == "__main__":
     database = Database()
-    database.import_file("schema.sql")
+    database.import_file("test_func.sql")
     print(database.export_database())
     #for x in database.tables:
     #    print(x.primary_keys)
-    database.handle_functional_dependencies()
+    database.get_table("winners").add_functional_dependency("winnerdob", ["winner", "winnerdob"])
+
+
     database.handle_functional_dependencies()
     print(database.export_database())
 

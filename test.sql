@@ -3,11 +3,3 @@ CREATE TABLE test(
 	name CHAR( 30 ) NOT NULL,
 	PRIMARY KEY ( id )
 );
-
-CREATE TABLE memes(
-	id INT NOT NULL AUTO_INCREMENT,
-	dank CHAR( 50 ) NOT NULL,
-	t_name CHAR( 30 ) NOT NULL,
-	PRIMARY KEY ( id ),
-	FOREIGN KEY ( t_name ) REFERENCES test(name)
-);
