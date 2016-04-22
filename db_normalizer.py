@@ -242,6 +242,9 @@ class Database:
                         child_info["name"]
                     )
                 self.tables.insert(0, new_table)
+    def create_table(self, table_name):
+        new_table = Table(table_name)
+        self.tables.append(new_table)
 
     def get_table(self, table_name):
         tableFound = None
@@ -266,10 +269,11 @@ class Database:
                 returnString += "  FOREIGN KEY ( "+foreign_key['name']+" ) "
                 returnString += "REFERENCES "+foreign_key['table']+"( "
                 returnString += foreign_key['column']+" ),\n"
-            returnString += "  PRIMARY KEY ( "+table.primary_keys[0]
-            for primary_key in (table.primary_keys[1:]):
-                returnString += ", "+primary_key
-            returnString += " )\n"
+            if table.primary_keys:
+                returnString += "  PRIMARY KEY ( "+table.primary_keys[0]
+                for primary_key in (table.primary_keys[1:]):
+                    returnString += ", "+primary_key
+                returnString += " )\n"
             returnString += ");\n\n"
         return returnString
 
@@ -399,7 +403,7 @@ class Table:
 
 if __name__ == "__main__":
     database = Database()
-    database.import_file("test_func.sql")
+    database.create_table("memes")
     print(database.export_database())
     #for x in database.tables:
     #    print(x.primary_keys)

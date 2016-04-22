@@ -33,6 +33,8 @@ class UIHandlers(QMainWindow):
             self.database_info_tree_menu
         )
         self.model = QStandardItemModel()
+        self.ui.database_info_tree.setModel(self.model)
+        self.filename_without_path = ""
         self.show()
 
     def generate_column_data(self, columns):
@@ -123,6 +125,8 @@ class UIHandlers(QMainWindow):
     def set_model_header_name(self):
         if(self.filename_without_path):
             self.model.setHorizontalHeaderLabels([self.filename_without_path])
+        else:
+            self.model.setHorizontalHeaderLabels(["New File"])
 
     def update_sql_code(self, text):
         self.ui.export_SQL_code.setText(text)
@@ -153,7 +157,6 @@ class UIHandlers(QMainWindow):
         self.database = Database()
         self.database.import_file(filename)
         self.update_sql_code(self.database.export_database())
-        self.ui.database_info_tree.setModel(self.model)
         self.filename = filename
         self.filename_without_path = filename.split("/")[-1]
         self.update_tree_view()
@@ -211,6 +214,19 @@ class UIHandlers(QMainWindow):
                 self.update_tree_view()
                 self.update_sql_code(self.database.export_database())
         return add_column_closure
+
+    def create_table(self):
+        def create_table_closure():
+            table_name, ok_table = QInputDialog.getText(
+                self,
+                'Create New Table',
+                'New Table Name'
+            )
+            if(ok_table):
+                self.database.create_table(table_name)
+                self.update_tree_view()
+                self.update_sql_code(self.database.export_database())
+        return create_table_closure
 
     def add_primary_key(self, table):
         def add_primary_key_closure():
@@ -428,8 +444,16 @@ class UIHandlers(QMainWindow):
         if(len(indexes) > 0):
             level = self.get_node_level(indexes[0])
             index = indexes[0]
+        else:
+            level = -1
         tree_menu = QMenu()
-        if(level == 0):
+        if(level == -1):
+            tree_menu.addAction(
+                self.tr("Create Table"),
+                self.create_table(),
+                0
+            )
+        elif(level == 0):
             tree_menu.addAction(self.tr("Delete Table"))
         elif(level == 1):
             tree_menu = self.database_info_tree_menu_l1(tree_menu, index)
