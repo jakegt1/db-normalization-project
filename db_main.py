@@ -311,7 +311,7 @@ class UIHandlers(QMainWindow):
                 QMessageBox.No
             )
             if(ok_delete):
-                this_table.remove_column(column)
+                self.database.remove_table_column(table, column)
                 self.update_tree_view()
                 self.update_sql_code(self.database.export_database())
         return delete_column_closure
@@ -334,7 +334,22 @@ class UIHandlers(QMainWindow):
                 self.update_sql_code(self.database.export_database())
         return delete_primary_key_closure
 
-
+    def delete_table(self, table):
+        def delete_table_closure():
+            message =  'Are you sure you want to delete the table '
+            message += table +'?'
+            ok_delete = QMessageBox.question(
+                self,
+                'Delete Table',
+                message,
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if(ok_delete):
+                self.database.remove_table(table)
+                self.update_tree_view()
+                self.update_sql_code(self.database.export_database())
+        return delete_table_closure
     def delete_foreign_key(self, table, foreign_key):
         def delete_foreign_key_closure():
             this_table = self.database.get_table(table)
@@ -454,7 +469,11 @@ class UIHandlers(QMainWindow):
                 0
             )
         elif(level == 0):
-            tree_menu.addAction(self.tr("Delete Table"))
+            tree_menu.addAction(
+                self.tr("Delete Table"),
+                self.delete_table(index.data()),
+                0
+            )
         elif(level == 1):
             tree_menu = self.database_info_tree_menu_l1(tree_menu, index)
         elif(level == 2):

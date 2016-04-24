@@ -30,6 +30,7 @@ class Database:
         table_name = creation_tokens[2].replace("(","")
         new_table = Table(table_name)
         line_num = line_num + 1
+        bracket_check_tokens = content[line_num].split()
         while(line_num < len(content)):
             current_line = content[line_num]
             column_info = self.parse_table_line(current_line)
@@ -64,17 +65,17 @@ class Database:
         else:
             table = line[2][1:-1]
             line = line[3:]
-        variableList = re.findall("[a-zA-Z]+", line[1])
+        variableList = re.findall("[a-z_A-Z]+", line[1])
         if(len(variableList) > 1):
             table = variableList[0]
             reference = variableList[1]
         else:
-            if(re.match("[a-zA-Z]+\(",variableList[0])):
+            if(re.match("[a-z_A-Z]+\(",variableList[0])):
                 table = re.match.group()[0:-1]
                 reference = line[2]
             else:
                 table = variableList[0]
-                reference = line[3]
+                reference = line[2]
         return {"table": table, "reference": reference}
 
     def parse_flags(self, line):
@@ -246,6 +247,37 @@ class Database:
         new_table = Table(table_name)
         self.tables.append(new_table)
 
+    def remove_table(self, table_name):
+        table = self.get_table(table_name)
+        if(table):
+            for column in table.columns:
+                self.remove_table_column(table_name, column["name"])
+            self.tables = [
+                table
+                for table in self.tables
+                if not (table.table_name == table_name)
+            ]
+
+    def remove_table_column(self, table_name, column_name):
+        table = self.get_table(table_name)
+        if(table):
+            if(table.get_column(column_name)):
+                other_tables = [
+                    table
+                    for table in self.tables
+                    if not (table.table_name == column_name)
+                ]
+                for other_table in other_tables:
+                    foreign_keys_wrt_table = [
+                        foreign_key
+                        for foreign_key in other_table.foreign_keys
+                        if (foreign_key["table"] == table.table_name)
+                    ]
+                    for fk in foreign_keys_wrt_table:
+                        if(fk["name"] == column_name):
+                            other_table.remove_foreign_key(column_name)
+                table.remove_column(column_name)
+
     def get_table(self, table_name):
         tableFound = None
         for table in self.tables:
@@ -403,13 +435,10 @@ class Table:
 
 if __name__ == "__main__":
     database = Database()
-    database.create_table("memes")
-    print(database.export_database())
+    database.import_file("normalized.sql")
     #for x in database.tables:
     #    print(x.primary_keys)
-    database.get_table("winners").add_functional_dependency("winnerdob", ["winner", "winnerdob"])
+    database.remove_table("winners_tournament")
 
-
-    database.handle_functional_dependencies()
     print(database.export_database())
 
